@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Casa Tracker</title>
+<style>
+/* ─────────────────────────────────────────────────
+   RESET + BASE  (Linear palette: dark, tight, clean)
+───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f0f10;
+  --surface:   #161618;
+  --surface2:  #1c1c1f;
+  --surface3:  #242428;
+  --border:    #27272a;
+  --border2:   #3f3f46;
+  --text:      #e4e4e7;
+  --text2:     #a1a1aa;
+  --text3:     #71717a;
+  --accent:    #7c6dfa;        /* Linear purple */
+  --accent-bg: rgba(124,109,250,.12);
+  --accent-border: rgba(124,109,250,.3);
+  --green:     #22c55e;
+  --green-bg:  rgba(34,197,94,.1);
+  --amber:     #f59e0b;
+  --amber-bg:  rgba(245,158,11,.1);
+  --red:       #ef4444;
+  --red-bg:    rgba(239,68,68,.1);
+  --radius:    6px;
+  --radius-lg: 10px;
+  --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─────────────────────────────────────────────────
+   LAYOUT  (sidebar + main)
+───────────────────────────────────────────────── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 18px 16px 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo-icon {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.sidebar-logo-text { font-weight: 600; font-size: 14px; color: var(--text); letter-spacing: -.2px; }
+.sidebar-logo-sub  { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+.sidebar-section { padding: 20px 8px 4px; }
+.sidebar-section-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--text3);
+  padding: 0 8px; margin-bottom: 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 450;
+  user-select: none;
+  transition: background .12s, color .12s;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent-bg); color: var(--accent); }
+.nav-item .ni-icon { font-size: 13px; opacity: .8; width: 16px; text-align: center; }
+.nav-item .ni-count {
+  margin-left: auto;
+  font-size: 10px; font-weight: 600;
+  background: var(--surface3); color: var(--text3);
+  padding: 1px 6px; border-radius: 99px;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 12px 8px;
+  border-top: 1px solid var(--border);
+}
+.sidebar-bottom .nav-item { color: var(--text3); font-size: 12px; }
+
+/* ── Main ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Topbar ── */
+.topbar {
+  height: 48px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+}
+.topbar-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.topbar-sep { color: var(--border2); }
+.topbar-sub { font-size: 12px; color: var(--text3); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ── Content area ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+}
+
+/* ─────────────────────────────────────────────────
+   BUTTONS
+───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: var(--radius);
+  font-size: 12px; font-weight: 500; font-family: var(--font);
+  cursor: pointer; border: none;
+  transition: background .12s, opacity .12s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--accent); color: #fff;
+}
+.btn-primary:hover { opacity: .88; }
+.btn-ghost {
+  background: var(--surface2);
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--surface3); color: var(--text); }
+.btn-danger-ghost {
+  background: none; color: var(--text3);
+  border: 1px solid transparent;
+}
+.btn-danger-ghost:hover { color: var(--red); background: var(--red-bg); border-color: transparent; }
+
+/* icon-only del */
+.icon-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); padding: 4px; border-radius: 4px;
+  display: inline-flex; align-items: center;
+  transition: color .1s, background .1s;
+}
+.icon-btn:hover { color: var(--red); background: var(--red-bg); }
+
+/* ─────────────────────────────────────────────────
+   STAT CARDS (4-up)
+───────────────────────────────────────────────── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+.stat-label {
+  font-size: 11px; font-weight: 500; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .6px;
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-size: 22px; font-weight: 600; letter-spacing: -.5px;
+  font-variant-numeric: tabular-nums;
+}
+.stat-value.v-accent { color: var(--accent); }
+.stat-value.v-green  { color: var(--green); }
+.stat-value.v-red    { color: var(--red); }
+.stat-value.v-text   { color: var(--text); }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* thin progress under global % */
+.mini-bar { height: 3px; background: var(--surface3); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+.mini-bar-fill { height: 3px; border-radius: 99px; background: var(--accent); transition: width .5s cubic-bezier(.4,0,.2,1); }
+
+/* ─────────────────────────────────────────────────
+   SECTION HEADER (above tables / gantt)
+───────────────────────────────────────────────── */
+.section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section-hdr-left { display: flex; align-items: center; gap: 10px; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.section-hint  { font-size: 11px; color: var(--text3); }
+
+/* ─────────────────────────────────────────────────
+   TABLE (tracker)
+───────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; }
+.tbl {
+  width: 100%;
+  min-width: 1160px;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;   /* clips border-radius on table */
+}
+.tbl thead th {
+  background: var(--surface);
+  color: var(--text3);
+  font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  user-select: none;
+}
+.tbl tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+.tbl tbody tr:last-child { border-bottom: none; }
+.tbl tbody tr:hover { background: var(--surface2); }
+.tbl td {
+  padding: 9px 12px;
+  vertical-align: middle;
+  color: var(--text);
+}
+.tbl td.dim { color: var(--text3); font-size: 12px; text-align: center; }
+
+/* Editable inputs inside table */
+.cell-input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--text);
+  width: 100%;
+  transition: border-color .1s, background .1s;
+}
+.cell-input:hover  { border-color: var(--border2); background: var(--surface2); }
+.cell-input:focus  { outline: none; border-color: var(--accent); background: var(--surface3); }
+select.cell-input  { cursor: pointer; min-width: 70px; }
+
+/* Numeric / mono */
+.num { font-variant-numeric: tabular-nums; font-size: 12px; }
+.v-green { color: var(--green); }
+.v-red   { color: var(--red); }
+.v-accent{ color: var(--accent); }
+.v-text2 { color: var(--text2); }
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 10px; font-weight: 600; letter-spacing: .3px;
+  white-space: nowrap;
+}
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+.badge-done   { background: var(--green-bg); color: var(--green); }
+.badge-done::before   { background: var(--green); }
+.badge-prog   { background: var(--accent-bg); color: var(--accent); }
+.badge-prog::before   { background: var(--accent); }
+.badge-idle   { background: var(--surface3); color: var(--text3); }
+.badge-idle::before   { background: var(--text3); }
+
+/* Inline progress bar */
+.row-bar-wrap { background: var(--surface3); border-radius: 99px; height: 4px; min-width: 70px; overflow: hidden; }
+.row-bar      { height: 4px; border-radius: 99px; transition: width .4s; }
+.row-bar.bar-full { background: var(--green); }
+.row-bar.bar-mid  { background: var(--accent); }
+.row-bar.bar-low  { background: var(--amber); }
+.row-bar.bar-zero { background: var(--surface3); }
+.row-bar-label { font-size: 10px; color: var(--text3); margin-top: 2px; text-align: right; }
+
+/* Staging cell */
+.staging-cell { display: flex; align-items: center; gap: 6px; }
+.staging-cell .cell-input { width: 72px; }
+.commit-btn {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  border-radius: 4px; padding: 3px 8px;
+  font-size: 11px; font-weight: 600; font-family: var(--font);
+  cursor: pointer; white-space: nowrap;
+  transition: background .1s;
+}
+.commit-btn:hover { background: rgba(124,109,250,.22); }
+
+/* ─────────────────────────────────────────────────
+   GANTT
+───────────────────────────────────────────────── */
+.gantt-wrap { overflow-x: auto; }
+#gantt-table {
+  border-collapse: collapse;
+  min-width: 1400px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+#gantt-table th, #gantt-table td { border: none; padding: 0; }
+#gantt-table tr { border-bottom: 1px solid var(--border); }
+#gantt-table tr:last-child { border-bottom: none; }
+
+.g-act-col {
+  position: sticky; left: 0; z-index: 3;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 0 12px;
+  white-space: nowrap;
+  font-size: 12px; font-weight: 500; color: var(--text2);
+  min-width: 280px;
+  width: 280px;
+}
+.g-act-col.hdr { color: var(--text3); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+
+.g-month-hdr {
+  background: var(--surface);
+  color: var(--text3);
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px;
+  text-align: center;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.g-week-hdr {
+  background: var(--surface);
+  color: var(--text3);
+  font-size: 10px; font-weight: 500;
+  text-align: center; padding: 4px 2px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border2);
+}
+.g-day-hdr {
+  background: var(--surface);
+  color: var(--text3);
+  font-size: 9px; text-align: center;
+  padding: 3px 1px;
+  min-width: 18px; width: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.g-day-hdr .dl { color: var(--text3); }
+.g-day-hdr .dn { font-weight: 600; color: var(--text2); }
+
+.g-day {
+  width: 20px; min-width: 20px; max-width: 20px;
+  height: 30px;
+  cursor: pointer;
+  transition: background .08s;
+}
+.g-day.sat { background: var(--surface2); }
+.g-day.active-day { background: var(--accent) !important; opacity: .85; }
+.g-day.active-day:hover { opacity: 1; }
+.g-day:not(.active-day):hover { background: var(--surface3) !important; }
+.g-act-col { height: 30px; display: flex; align-items: center; }
+
+/* Gantt header rows need th not td for sticky */
+.gantt-month-row th, .gantt-week-row th, .gantt-day-row th { padding: 0; }
+
+/* ─────────────────────────────────────────────────
+   NOTES BOX
+───────────────────────────────────────────────── */
+.notes {
+  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text2);
+}
+.notes strong { display: block; margin-bottom: 6px; color: var(--amber); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* ─────────────────────────────────────────────────
+   BIWEEKLY SECTION
+───────────────────────────────────────────────── */
+.periods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.period-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 0;
+}
+.period-card.is-open { border-color: var(--accent-border); }
+.period-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.period-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.period-amount { font-size: 20px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
+.period-sub { font-size: 11px; color: var(--text3); margin-top: 2px; margin-bottom: 10px; }
+.period-rows { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.period-row  { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text2); padding: 3px 0; border-bottom: 1px solid var(--border); }
+.period-row:last-child { border-bottom: none; }
+.period-row .pr-val { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+.period-empty { font-size: 11px; color: var(--text3); text-align: center; padding: 10px 0; }
+
+.pending-preview {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.pending-preview .pp-title { font-size: 10px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+.pending-preview .pp-row   { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); padding: 2px 0; }
+.pending-preview .pp-total { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text); padding-top: 5px; border-top: 1px solid var(--accent-border); margin-top: 4px; }
+
+.paid-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--green); font-weight: 500; margin-top: 4px; }
+
+/* ─────────────────────────────────────────────────
+   COLUMN RESIZE
+───────────────────────────────────────────────── */
+.resizable-th {
+  position: relative;
+}
+.col-resize-handle {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.col-resize-handle::after {
+  content: '';
+  display: block;
+  width: 2px;
+  height: 14px;
+  border-radius: 99px;
+  background: var(--border2);
+  transition: background .15s;
+}
+.col-resize-handle:hover::after,
+.col-resize-handle.resizing::after {
+  background: var(--accent);
+}
+
+/* ─────────────────────────────────────────────────
+   DRAG & DROP rows
+───────────────────────────────────────────────── */
+.drag-handle {
+  cursor: grab;
+  color: var(--text3);
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity .15s;
+  user-select: none;
+}
+.tbl tbody tr:hover .drag-handle { opacity: 1; }
+.tbl tbody tr.dragging {
+  opacity: .35;
+}
+.tbl tbody tr.drag-over td {
+  border-top: 2px solid var(--accent);
+}
+
+/* ─────────────────────────────────────────────────
+   SCROLLBARS  (webkit)
+───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ─────────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .stats-row { grid-template-columns: repeat(2,1fr); }
+  .sidebar   { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ════════════════════════════
+       SIDEBAR
+  ════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🏗</div>
+      <div>
+        <div class="sidebar-logo-text">Casa Tracker</div>
+        <div class="sidebar-logo-sub">Construcción</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Vistas</div>
+      <button class="nav-item active" id="nav-cronograma" onclick="switchTab('cronograma',this)">
+        <span class="ni-icon">📅</span> Cronograma
+      </button>
+      <button class="nav-item" id="nav-tracker" onclick="switchTab('tracker',this)">
+        <span class="ni-icon">📊</span> Actividades
+        <span class="ni-count" id="nav-count">20</span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Quincenas</div>
+      <div id="sidebar-periods"></div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="nav-item" style="cursor:default">
+        <span class="ni-icon">💾</span> Auto-guardado
+        <span style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════════════
+       MAIN AREA
+  ════════════════════════════ -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Cronograma</span>
+      <span class="topbar-sep">/</span>
+      <span class="topbar-sub">Sep 14 – Nov 21, 2025</span>
+      <div class="topbar-actions" id="topbar-actions">
+        <button class="btn btn-ghost" id="btn-export-csv" onclick="exportCSV()" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 1v7M3.5 5.5L6 8l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M1 9.5v.5a1 1 0 001 1h8a1 1 0 001-1v-.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Exportar CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- ══ TAB 1 – CRONOGRAMA ══ -->
+      <div id="tab-cronograma" class="tab-panel" style="display:block">
+        <div class="section-hdr">
+          <div class="section-hdr-left">
+            <span class="section-title">Cronograma de Actividades Faltantes</span>
+          </div>
+          <span class="section-hint">Clic en una celda para activar / desactivar</span>
+        </div>
+        <div class="gantt-wrap">
+          <div id="gantt-wrapper"></div>
+        </div>
+        <div class="notes">
+          <strong>Notas</strong>
+          <div><b style="color:var(--text)">Nota 1 —</b> Periodo sin actividades en cubierta y cielo razo: 5 días en espera del caballete de Comaderas.</div>
+          <div><b style="color:var(--text)">Nota 2 —</b> Trabajos en altura (bajo rendimiento): Pañete Interior/Exterior, Cubierta, Redoblón, Cielo Razo, Acabados.</div>
+          <div><b style="color:var(--text)">Nota 3 —</b> Terminación Plantilla Pulida: se ejecuta al finalizar la última actividad; requiere mínimo 3 semanas.</div>
+        </div>
+      </div>
+
+      <!-- ══ TAB 2 – TRACKER ══ -->
+      <div id="tab-tracker" class="tab-panel" style="display:none">
+
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Contrato Total</div>
+            <div class="stat-value v-accent" id="s-total">$0</div>
+            <div class="stat-sub">Valor acordado total</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Pagado</div>
+            <div class="stat-value v-green" id="s-paid">$0</div>
+            <div class="stat-sub">Quincenas cerradas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Saldo Pendiente</div>
+            <div class="stat-value v-red" id="s-remaining">$0</div>
+            <div class="stat-sub">Por pagar</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avance Global</div>
+            <div class="stat-value v-text" id="s-progress">0%</div>
+            <div class="mini-bar"><div class="mini-bar-fill" id="s-prog-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- Activities table -->
+        <div class="section-hdr">
+          <div class="section-hdr-left">
+            <span class="section-title">Actividades</span>
+          </div>
+          <button class="btn btn-primary" onclick="addRow()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Nueva actividad
+          </button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl" id="tracker-table">
+            <thead>
+              <tr>
+                <th style="width:28px"></th>
+                <th style="width:32px;text-align:center">#</th>
+                <th style="min-width:170px" class="resizable-th" id="th-actividad">Actividad<div class="col-resize-handle" id="resize-actividad"></div></th>
+                <th style="width:90px;min-width:90px">Unidad</th>
+                <th style="width:100px">Cant. Total</th>
+                <th style="width:110px">Precio/Unidad</th>
+                <th style="width:110px">Total Contrato</th>
+                <th style="width:140px">Cant. Ejecutada <span style="color:var(--text3);font-weight:400">(staging)</span></th>
+                <th style="width:110px">Cant. Acumulada</th>
+                <th style="width:110px">Pago Quincena</th>
+                <th style="width:105px">Total Pagado</th>
+                <th style="width:105px">Saldo</th>
+                <th style="width:130px">Avance</th>
+                <th style="width:32px"></th>
+              </tr>
+            </thead>
+            <tbody id="tracker-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Biweekly periods -->
+        <div style="margin-top:32px">
+          <div class="section-hdr">
+            <div class="section-hdr-left">
+              <span class="section-title">Quincenas</span>
+              <span class="section-hint">Registra lo ejecutado y cierra el pago de cada quincena</span>
+            </div>
+            <button class="btn btn-ghost" onclick="addPeriod()">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Nueva quincena
+            </button>
+          </div>
+          <div class="periods-grid" id="biweekly-grid"></div>
+        </div>
+
+      </div><!-- /tab-tracker -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+/* ═══════════════════════════════
+   CONSTANTS
+═══════════════════════════════ */
+const DEFAULT_ACTIVITY_NAMES = [
+  "Inst. Eléctricas","Inst. Hidráulicas","Inst. Sanitarias","Inst. Aguas Lluvias",
+  "Viga Superior – Machones","Pañete Interior","Pañete Exterior","Relleno Zona Piscina",
+  "Andén","Poza Séptica","Cubierta","Redoblón","Molduras Cubierta","Cielo Raso",
+  "Acabado Muros Interiores","Acabado Muros Exteriores","Impermeab. Viga Canal",
+  "Carpintería Metálica","Carpintería Madera","Terminación Plantilla",
+];
+
+const GANTT_SCHEDULE = {
+  "Inst. Eléctricas":         [["2025-09-14","2025-09-19"],["2025-09-21","2025-09-26"]],
+  "Inst. Hidráulicas":        [["2025-09-14","2025-09-22"]],
+  "Inst. Sanitarias":         [["2025-09-14","2025-09-19"]],
+  "Inst. Aguas Lluvias":      [["2025-09-14","2025-09-19"],["2025-09-21","2025-09-24"]],
+  "Viga Superior – Machones": [["2025-09-14","2025-09-26"],["2025-09-28","2025-10-01"]],
+  "Pañete Interior":          [["2025-09-21","2025-10-03"],["2025-10-05","2025-10-17"]],
+  "Pañete Exterior":          [["2025-09-28","2025-10-17"]],
+  "Relleno Zona Piscina":     [["2025-09-21","2025-09-30"],["2025-10-01","2025-10-17"]],
+  "Andén":                    [["2025-09-28","2025-10-17"]],
+  "Poza Séptica":             [["2025-09-14","2025-09-19"],["2025-09-21","2025-09-22"]],
+  "Cubierta":                 [["2025-09-14","2025-09-19"],["2025-10-05","2025-10-17"]],
+  "Redoblón":                 [["2025-09-21","2025-09-26"],["2025-10-12","2025-10-17"]],
+  "Molduras Cubierta":        [["2025-10-05","2025-10-10"]],
+  "Cielo Raso":               [["2025-10-05","2025-10-24"]],
+  "Acabado Muros Interiores": [["2025-09-28","2025-10-24"]],
+  "Acabado Muros Exteriores": [["2025-10-19","2025-11-02"]],
+  "Impermeab. Viga Canal":    [["2025-09-21","2025-09-30"]],
+  "Carpintería Metálica":     [["2025-10-19","2025-10-31"]],
+  "Carpintería Madera":       [["2025-10-19","2025-10-31"]],
+  "Terminación Plantilla":    [["2025-11-02","2025-11-21"]],
+};
+
+/* ═══════════════════════════════
+   HELPERS
+═══════════════════════════════ */
+function num(v)  { return parseFloat(v) || 0; }
+function esc(s)  { return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+function fmt(n)  {
+  if (isNaN(n) || n === null) return "$0";
+  return "$" + Number(n).toLocaleString("es-CO",{minimumFractionDigits:0,maximumFractionDigits:0});
+}
+
+/* ═══════════════════════════════
+   GANTT
+═══════════════════════════════ */
+function buildDayList() {
+  const days = [], end = new Date("2025-11-21");
+  for (let d = new Date("2025-09-14"); d <= end; d.setDate(d.getDate()+1))
+    if (d.getDay() !== 0) days.push(new Date(d));
+  return days;
+}
+function fmtDate(d) { return d.toISOString().slice(0,10); }
+function inRange(ds, ranges) { return ranges.some(([s,e]) => ds >= s && ds <= e); }
+function buildMonths(days) {
+  const NAMES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const out=[]; let cur=null;
+  days.forEach(d => {
+    const m=d.getMonth();
+    if (!cur||m!==cur.month){if(cur)out.push(cur);cur={month:m,label:NAMES[m],count:0};}
+    cur.count++;
+  });
+  if(cur)out.push(cur); return out;
+}
+function buildWeeks(days) {
+  const out=[]; let cur=null;
+  days.forEach(d=>{
+    if(!cur||d.getDay()===1){if(cur)out.push(cur);cur={days:[]};}
+    cur.days.push(d);
+  });
+  if(cur)out.push(cur); return out;
+}
+function weekLabel(days) {
+  if(!days.length)return"";
+  const MN=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const s=days[0],e=days[days.length-1];
+  return s.getMonth()===e.getMonth()
+    ? `${MN[s.getMonth()]} ${s.getDate()}–${e.getDate()}`
+    : `${MN[s.getMonth()]} ${s.getDate()} – ${MN[e.getMonth()]} ${e.getDate()}`;
+}
+function dayLetter(d){return["D","L","M","M","J","V","S"][d.getDay()];}
+
+function loadGanttOv(){try{return JSON.parse(localStorage.getItem("ganttOv")||"{}");}catch{return{};}}
+function saveGanttOv(ov){localStorage.setItem("ganttOv",JSON.stringify(ov));}
+
+function buildGantt() {
+  const days=buildDayList(), months=buildMonths(days), weeks=buildWeeks(days), ov=loadGanttOv();
+  const tbl=document.createElement("table"); tbl.id="gantt-table";
+
+  /* Month row */
+  const mRow=tbl.insertRow(); mRow.className="gantt-month-row";
+  {
+    const th=document.createElement("th");
+    th.rowSpan=3; th.className="g-act-col hdr";
+    th.textContent="ACTIVIDAD"; mRow.appendChild(th);
+  }
+  months.forEach(m=>{
+    const th=document.createElement("th");
+    th.colSpan=m.count; th.className="g-month-hdr"; th.textContent=m.label.toUpperCase();
+    mRow.appendChild(th);
+  });
+
+  /* Week row */
+  const wRow=tbl.insertRow(); wRow.className="gantt-week-row";
+  weeks.forEach(w=>{
+    const th=document.createElement("th");
+    th.colSpan=w.days.length; th.className="g-week-hdr"; th.textContent=weekLabel(w.days);
+    wRow.appendChild(th);
+  });
+
+  /* Day row */
+  const dRow=tbl.insertRow(); dRow.className="gantt-day-row";
+  days.forEach(d=>{
+    const th=document.createElement("th"); th.className="g-day-hdr";
+    th.innerHTML=`<div class="dl">${dayLetter(d)}</div><div class="dn">${d.getDate()}</div>`;
+    dRow.appendChild(th);
+  });
+
+  /* Activity rows */
+  Object.entries(GANTT_SCHEDULE).forEach(([act,ranges])=>{
+    const tr=tbl.insertRow();
+    const ntd=document.createElement("td"); ntd.className="g-act-col"; ntd.textContent=act; tr.appendChild(ntd);
+    days.forEach(d=>{
+      const td=tr.insertCell();
+      td.className="g-day"+(d.getDay()===6?" sat":"");
+      const ds=fmtDate(d), key=act+"|"+ds;
+      const def=inRange(ds,ranges);
+      const show=ov[key]!==undefined?ov[key]:def;
+      if(show) td.classList.add("active-day");
+      td.title=`${act} – ${ds}`;
+      td.onclick=()=>{ const on=td.classList.toggle("active-day"); const o=loadGanttOv(); o[key]=on; saveGanttOv(o); };
+    });
+  });
+
+  const wrap=document.getElementById("gantt-wrapper");
+  wrap.innerHTML=""; wrap.appendChild(tbl);
+}
+
+/* ═══════════════════════════════
+   TRACKER STATE
+═══════════════════════════════ */
+let rows=[], periods=[];
+
+function loadData(){
+  try{rows=JSON.parse(localStorage.getItem("tRows")||"[]");}catch{rows=[];}
+  try{periods=JSON.parse(localStorage.getItem("tPeriods")||"[]");}catch{periods=[];}
+  if(!rows.length)    initRows();
+  if(!periods.length) initPeriods();
+}
+function saveData(){
+  localStorage.setItem("tRows",   JSON.stringify(rows));
+  localStorage.setItem("tPeriods",JSON.stringify(periods));
+}
+function initRows(){
+  rows=DEFAULT_ACTIVITY_NAMES.map((name,i)=>({
+    id:i+1, name, unit:"m2", price:0, qty:0, staging:0, accumulated:0, paid:0,
+  }));
+}
+function initPeriods(){
+  periods=[
+    {id:1,label:"Sep 14 – Sep 26",snapshot:[]},
+    {id:2,label:"Sep 28 – Oct 10",snapshot:[]},
+    {id:3,label:"Oct 12 – Oct 24",snapshot:[]},
+    {id:4,label:"Oct 26 – Nov 07",snapshot:[]},
+    {id:5,label:"Nov 09 – Nov 21",snapshot:[]},
+  ];
+}
+
+/* ═══════════════════════════════
+   RENDER TRACKER
+═══════════════════════════════ */
+function renderTracker(){
+  const tbody=document.getElementById("tracker-body");
+  tbody.innerHTML="";
+
+  rows.forEach((row,idx)=>{
+    const contract  =num(row.price)*num(row.qty);
+    const stagingPay=num(row.price)*num(row.staging);
+    const accum     =num(row.accumulated);
+    const paid      =num(row.paid);
+    const remaining =contract-paid;
+    const pct=num(row.qty)>0?Math.min(100,(accum/num(row.qty))*100):0;
+
+    let barCls="row-bar ";
+    if(pct>=100)       barCls+="bar-full";
+    else if(pct>=50)   barCls+="bar-mid";
+    else if(pct>0)     barCls+="bar-low";
+    else               barCls+="bar-zero";
+
+    const badge=pct>=100
+      ?`<span class="badge badge-done">Completado</span>`
+      :pct>0
+        ?`<span class="badge badge-prog">En progreso</span>`
+        :`<span class="badge badge-idle">Sin iniciar</span>`;
+
+    const tr=document.createElement("tr");
+    tr.dataset.id=row.id;
+    tr.draggable=true;
+    tr.innerHTML=`
+      <td><span class="drag-handle" title="Arrastrar para reordenar">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <circle cx="4" cy="2.5" r="1" fill="currentColor"/>
+          <circle cx="8" cy="2.5" r="1" fill="currentColor"/>
+          <circle cx="4" cy="6"   r="1" fill="currentColor"/>
+          <circle cx="8" cy="6"   r="1" fill="currentColor"/>
+          <circle cx="4" cy="9.5" r="1" fill="currentColor"/>
+          <circle cx="8" cy="9.5" r="1" fill="currentColor"/>
+        </svg>
+      </span></td>
+      <td class="dim">${idx+1}</td>
+      <td><input class="cell-input" value="${esc(row.name)}"
+            onchange="setField(${row.id},'name',this.value)" style="min-width:150px"/></td>
+      <td>
+        <select class="cell-input" style="min-width:70px;width:70px" onchange="setField(${row.id},'unit',this.value)">
+          ${["m2","m3","ml","m","und","gl","kg"].map(u=>`<option${row.unit===u?" selected":""}>${u}</option>`).join("")}
+        </select>
+      </td>
+      <td><input class="cell-input num" type="number" min="0" step="0.01"
+            value="${row.qty}"  onchange="setField(${row.id},'qty',this.value)"/></td>
+      <td><input class="cell-input num" type="number" min="0" step="100"
+            value="${row.price}" onchange="setField(${row.id},'price',this.value)"/></td>
+      <td class="num v-text2" style="font-weight:500">${fmt(contract)}</td>
+      <td>
+        <div class="staging-cell">
+          <input class="cell-input num" type="number" min="0" step="0.01"
+                 value="${row.staging||""}" placeholder="0"
+                 onchange="setField(${row.id},'staging',this.value)"
+                 style="width:72px"/>
+          <button class="commit-btn" onclick="commitStaging(${row.id})">✓ OK</button>
+        </div>
+      </td>
+      <td class="num v-text2">${accum.toLocaleString("es-CO",{maximumFractionDigits:2})} <span style="color:var(--text3)">${esc(row.unit)}</span></td>
+      <td class="num v-accent" style="font-weight:500">${fmt(stagingPay)}</td>
+      <td class="num v-green"  style="font-weight:500">${fmt(paid)}</td>
+      <td class="num ${remaining>0?"v-red":"v-green"}" style="font-weight:500">${fmt(remaining)}</td>
+      <td>
+        <div class="row-bar-wrap"><div class="${barCls}" style="width:${pct.toFixed(1)}%"></div></div>
+        <div class="row-bar-label">${pct.toFixed(1)}% ${badge}</div>
+      </td>
+      <td><button class="icon-btn" onclick="deleteRow(${row.id})" title="Eliminar">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  /* Attach drag-and-drop after all rows rendered */
+  attachDragHandlers();
+
+  /* Summary */
+  const totContract=rows.reduce((s,r)=>s+num(r.price)*num(r.qty),0);
+  const totPaid    =rows.reduce((s,r)=>s+num(r.paid),0);
+  const wpct=totContract>0
+    ?rows.reduce((s,r)=>{
+        const c=num(r.price)*num(r.qty);
+        const p=num(r.qty)>0?Math.min(1,num(r.accumulated)/num(r.qty)):0;
+        return s+c*p;
+      },0)/totContract*100
+    :0;
+
+  document.getElementById("s-total").textContent    =fmt(totContract);
+  document.getElementById("s-paid").textContent     =fmt(totPaid);
+  document.getElementById("s-remaining").textContent=fmt(totContract-totPaid);
+  document.getElementById("s-progress").textContent =wpct.toFixed(1)+"%";
+  document.getElementById("s-prog-bar").style.width =wpct.toFixed(1)+"%";
+
+  /* Nav count */
+  document.getElementById("nav-count").textContent=rows.length;
+
+  renderBiweekly();
+}
+
+/* ── Drag & Drop ── */
+let dragSrcId = null;
+
+function attachDragHandlers() {
+  const tbody = document.getElementById("tracker-body");
+  const trs   = [...tbody.querySelectorAll("tr")];
+
+  trs.forEach(tr => {
+    tr.addEventListener("dragstart", e => {
+      dragSrcId = Number(tr.dataset.id);
+      tr.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    tr.addEventListener("dragend", () => {
+      tr.classList.remove("dragging");
+      tbody.querySelectorAll("tr").forEach(r => r.classList.remove("drag-over"));
+    });
+
+    tr.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      tbody.querySelectorAll("tr").forEach(r => r.classList.remove("drag-over"));
+      if (Number(tr.dataset.id) !== dragSrcId) tr.classList.add("drag-over");
+    });
+
+    tr.addEventListener("dragleave", () => {
+      tr.classList.remove("drag-over");
+    });
+
+    tr.addEventListener("drop", e => {
+      e.preventDefault();
+      const targetId = Number(tr.dataset.id);
+      if (dragSrcId === null || dragSrcId === targetId) return;
+
+      const srcIdx = rows.findIndex(r => r.id === dragSrcId);
+      const tgtIdx = rows.findIndex(r => r.id === targetId);
+      if (srcIdx === -1 || tgtIdx === -1) return;
+
+      // Reorder: remove src and insert before/after target
+      const [moved] = rows.splice(srcIdx, 1);
+      const newIdx  = rows.findIndex(r => r.id === targetId);
+      rows.splice(newIdx, 0, moved);
+
+      dragSrcId = null;
+      saveData();
+      renderTracker();
+    });
+  });
+}
+
+function setField(id,field,value){
+  const row=rows.find(r=>r.id===id); if(!row)return;
+  row[field]=(field==="name"||field==="unit")?value:num(value);
+  saveData(); renderTracker();
+}
+
+function commitStaging(id){
+  const row=rows.find(r=>r.id===id); if(!row)return;
+  const qty=num(row.staging);
+  if(qty<=0){alert("Ingresa una cantidad mayor a 0 antes de confirmar.");return;}
+  row.accumulated+=qty;
+  row.paid       +=num(row.price)*qty;
+  row.staging     =0;
+  saveData(); renderTracker();
+}
+
+function addRow(){
+  rows.push({id:Date.now(),name:"Nueva Actividad",unit:"m2",price:0,qty:0,staging:0,accumulated:0,paid:0});
+  saveData(); renderTracker();
+}
+
+function deleteRow(id){
+  if(!confirm("¿Eliminar esta actividad?"))return;
+  rows=rows.filter(r=>r.id!==id);
+  saveData(); renderTracker();
+}
+
+/* ═══════════════════════════════
+   BIWEEKLY
+═══════════════════════════════ */
+function renderBiweekly(){
+  const grid=document.getElementById("biweekly-grid");
+  const sidebar=document.getElementById("sidebar-periods");
+  grid.innerHTML=""; sidebar.innerHTML="";
+
+  periods.forEach(p=>{
+    const snap=p.snapshot||[];
+    const total=snap.reduce((s,x)=>s+x.amount,0);
+    const isOpen=snap.length===0;
+
+    /* pending staging */
+    const pendingRows=isOpen?rows.filter(r=>num(r.staging)>0):[];
+    const pendingTotal=pendingRows.reduce((s,r)=>s+num(r.price)*num(r.staging),0);
+
+    let pendingHtml="";
+    if(isOpen&&pendingRows.length){
+      pendingHtml=`
+        <div class="pending-preview">
+          <div class="pp-title">⏳ Pendiente staging</div>
+          ${pendingRows.map(r=>`<div class="pp-row"><span>${esc(r.name)}</span><span>${fmt(num(r.price)*num(r.staging))}</span></div>`).join("")}
+          <div class="pp-total"><span>Estimado quincena</span><span>${fmt(pendingTotal)}</span></div>
+        </div>`;
+    }
+
+    const rowsHtml=snap.length
+      ?snap.map(x=>`<div class="period-row"><span>${esc(x.name)}</span><span class="pr-val">${fmt(x.amount)}</span></div>`).join("")
+      :`<div class="period-empty">Sin movimientos</div>`;
+
+    const card=document.createElement("div");
+    card.className="period-card"+(isOpen?" is-open":"");
+    card.innerHTML=`
+      <div class="period-header">
+        <span class="period-label">${esc(p.label)}</span>
+        <button class="icon-btn" onclick="deletePeriod(${p.id})" title="Eliminar">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="period-amount">${fmt(total)}</div>
+      <div class="period-sub">${isOpen?"Quincena abierta":"Pago cerrado"}</div>
+      <div class="period-rows">${rowsHtml}</div>
+      ${pendingHtml}
+      ${isOpen
+        ?`<button class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px" onclick="closePayment(${p.id})">Registrar pago quincena</button>`
+        :`<div class="paid-badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Pago registrado</div>`}
+    `;
+    grid.appendChild(card);
+
+    /* sidebar entry */
+    const sBtn=document.createElement("button");
+    sBtn.className="nav-item";
+    sBtn.style.fontSize="12px";
+    const dot=isOpen?`<span style="width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:4px"></span>`
+                    :`<span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px"></span>`;
+    sBtn.innerHTML=`${dot}${esc(p.label)}`;
+    sidebar.appendChild(sBtn);
+  });
+}
+
+function addPeriod(){
+  const label=prompt("Nombre de la quincena (ej: Nov 23 – Dic 05):","");
+  if(!label||!label.trim())return;
+  periods.push({id:Date.now(),label:label.trim(),snapshot:[]});
+  saveData(); renderBiweekly();
+}
+function deletePeriod(id){
+  if(!confirm("¿Eliminar esta quincena?"))return;
+  periods=periods.filter(p=>p.id!==id);
+  saveData(); renderBiweekly();
+}
+function closePayment(periodId){
+  const p=periods.find(x=>x.id===periodId); if(!p)return;
+  const toCommit=rows.filter(r=>num(r.staging)>0);
+  if(!toCommit.length){
+    alert("No hay cantidades en staging.\nIngresa cantidades en la columna 'Cant. Ejecutada' primero.");
+    return;
+  }
+  const snap=toCommit.map(r=>({name:r.name,qty:num(r.staging),unit:r.unit,amount:num(r.price)*num(r.staging)}));
+  const totalPay=snap.reduce((s,x)=>s+x.amount,0);
+  if(!confirm(`Registrar pago de quincena "${p.label}"\nTotal: ${fmt(totalPay)}`))return;
+  toCommit.forEach(row=>{
+    const e=snap.find(s=>s.name===row.name); if(!e)return;
+    row.accumulated+=e.qty;
+    row.paid       +=e.amount;
+    row.staging     =0;
+  });
+  p.snapshot=snap;
+  saveData(); renderTracker();
+}
+
+/* ═══════════════════════════════
+   EXPORT CSV
+═══════════════════════════════ */
+function exportCSV() {
+  const COLS = [
+    "Actividad", "Unidad", "Cant. Total", "Precio/Unidad",
+    "Total Contrato", "Cant. Acumulada", "Total Pagado",
+    "Saldo", "Avance %", "Estado",
+  ];
+
+  function csvCell(v) {
+    const s = String(v == null ? "" : v);
+    // Wrap in quotes if it contains comma, quote, or newline
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  const lines = [];
+  // Header
+  lines.push(COLS.map(csvCell).join(","));
+
+  // Period snapshot columns – one column per period showing what was paid
+  const periodLabels = periods.map(p => p.label);
+  if (periodLabels.length) {
+    lines[0] += "," + periodLabels.map(l => csvCell("Pago: " + l)).join(",");
+  }
+
+  // Data rows
+  rows.forEach(row => {
+    const contract  = num(row.price) * num(row.qty);
+    const accum     = num(row.accumulated);
+    const paid      = num(row.paid);
+    const remaining = contract - paid;
+    const pct       = num(row.qty) > 0 ? Math.min(100, (accum / num(row.qty)) * 100) : 0;
+    const estado    = pct >= 100 ? "Completado" : pct > 0 ? "En progreso" : "Sin iniciar";
+
+    const cells = [
+      row.name,
+      row.unit,
+      num(row.qty),
+      num(row.price),
+      contract,
+      accum,
+      paid,
+      remaining,
+      pct.toFixed(1),
+      estado,
+    ];
+
+    let line = cells.map(csvCell).join(",");
+
+    // Append per-period payment amounts
+    if (periods.length) {
+      const perPeriod = periods.map(p => {
+        const snap = (p.snapshot || []).find(s => s.name === row.name);
+        return snap ? snap.amount : 0;
+      });
+      line += "," + perPeriod.map(csvCell).join(",");
+    }
+
+    lines.push(line);
+  });
+
+  // Totals row
+  const totContract = rows.reduce((s,r) => s + num(r.price)*num(r.qty), 0);
+  const totPaid     = rows.reduce((s,r) => s + num(r.paid), 0);
+  const totRemain   = totContract - totPaid;
+  const totCells    = ["TOTAL","","","", totContract,"", totPaid, totRemain,"",""];
+  let totLine = totCells.map(csvCell).join(",");
+  if (periods.length) {
+    const totPerPeriod = periods.map(p =>
+      (p.snapshot||[]).reduce((s,x) => s + x.amount, 0)
+    );
+    totLine += "," + totPerPeriod.map(csvCell).join(",");
+  }
+  lines.push(totLine);
+
+  const csv     = lines.join("\r\n");
+  const blob    = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }); // BOM for Excel
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement("a");
+  const ts      = new Date().toISOString().slice(0,10);
+  a.href        = url;
+  a.download    = `casa-tracker-${ts}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ═══════════════════════════════
+   TAB SWITCHING
+═══════════════════════════════ */
+const TOPBAR_TITLES={
+  cronograma:"Cronograma",
+  tracker:   "Actividades",
+};
+function switchTab(name, btn){
+  document.querySelectorAll(".tab-panel").forEach(p=>p.style.display="none");
+  document.querySelectorAll(".nav-item[id^='nav-']").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+name).style.display="block";
+  document.getElementById("nav-"+name).classList.add("active");
+  document.getElementById("topbar-title").textContent=TOPBAR_TITLES[name]||name;
+  // Show export button only on tracker tab
+  document.getElementById("btn-export-csv").style.display = name === "tracker" ? "" : "none";
+}
+
+/* ═══════════════════════════════
+   COLUMN RESIZE
+═══════════════════════════════ */
+function initColResize() {
+  const handle = document.getElementById("resize-actividad");
+  const th     = document.getElementById("th-actividad");
+  if (!handle || !th) return;
+
+  // Restore saved width
+  const saved = localStorage.getItem("colWidthActividad");
+  if (saved) th.style.minWidth = th.style.width = saved + "px";
+
+  let startX, startW;
+
+  handle.addEventListener("mousedown", e => {
+    e.preventDefault();
+    startX = e.clientX;
+    startW = th.offsetWidth;
+    handle.classList.add("resizing");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    function onMove(e) {
+      const newW = Math.max(120, startW + (e.clientX - startX));
+      th.style.minWidth = th.style.width = newW + "px";
+    }
+    function onUp() {
+      handle.classList.remove("resizing");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      localStorage.setItem("colWidthActividad", th.offsetWidth);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+}
+
+/* ═══════════════════════════════
+   INIT
+═══════════════════════════════ */
+document.addEventListener("DOMContentLoaded",()=>{
+  buildGantt();
+  loadData();
+  renderTracker();
+  initColResize();
+});
+</script>
+</body>
+</html>
