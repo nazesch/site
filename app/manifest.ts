@@ -1,0 +1,28 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "Casa Tracker",
+    short_name: "Casa",
+    description: "Cronograma y seguimiento de actividades de construcción",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
+    orientation: "any",
+    icons: [
+      {
+        src: "/icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
+        src: "/apple-icon.svg",
+        sizes: "180x180",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+    ],
+  };
+}
