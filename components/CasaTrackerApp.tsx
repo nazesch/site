@@ -22,7 +22,7 @@ import {
   createDefaultGanttActivities,
   formatGanttRange,
 } from "@/lib/gantt-data";
-import { migrateGanttFrom2025To2026 } from "@/lib/gantt-migrate";
+import { migrateGanttStorage } from "@/lib/gantt-migrate";
 import { applyRainyDayToAll } from "@/lib/gantt-rain";
 import { fmt, num } from "@/lib/format";
 import { buildBackup, downloadBackupJson, parseBackup } from "@/lib/json-backup";
@@ -73,7 +73,7 @@ export function CasaTrackerApp() {
     let loadedGantt = loadJson<GanttActivity[]>(STORAGE_KEYS.ganttActivities, []);
     if (!loadedGantt.length) loadedGantt = createDefaultGanttActivities();
     const loadedEnd = loadJson<string>(STORAGE_KEYS.ganttEndDate, "") || GANTT_END;
-    const migrated = migrateGanttFrom2025To2026(loadedGantt, loadedOv, loadedEnd);
+    const migrated = migrateGanttStorage(loadedGantt, loadedOv, loadedEnd);
     setGanttOv(migrated.ov);
     setGanttActivities(migrated.activities);
     setGanttEndDate(migrated.endDate);
