@@ -147,6 +147,31 @@ body {
   gap: 2px;
 }
 .sidebar-bottom .nav-item { color: var(--text3); font-size: 12px; }
+.sidebar-recovery {
+  padding: 8px 4px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+}
+.sidebar-recovery .sidebar-section-label {
+  padding: 4px 8px 6px;
+}
+.nav-item-recovery {
+  font-size: 11px !important;
+  color: var(--text2) !important;
+  line-height: 1.35;
+  white-space: normal;
+}
+.recovery-banner {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  border-radius: var(--radius-lg);
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.recovery-banner strong { color: var(--text); font-weight: 600; }
 .nav-item-static { cursor: default; }
 .nav-item-static:hover { background: transparent; color: var(--text3); }
 .ni-status-dot {

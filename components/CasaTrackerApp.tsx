@@ -23,6 +23,14 @@ import {
   formatGanttRange,
 } from "@/lib/gantt-data";
 import { migrateGanttStorage } from "@/lib/gantt-migrate";
+import {
+  appendGanttVaultSnapshot,
+  formatSnapshotLabel,
+  loadGanttVault,
+  restoreGanttSnapshot,
+  type GanttSnapshot,
+  undoOctoberPlanningShift,
+} from "@/lib/gantt-recovery";
 import { applyRainyDayToAll } from "@/lib/gantt-rain";
 import { fmt, num } from "@/lib/format";
 import { buildBackup, downloadBackupJson, parseBackup } from "@/lib/json-backup";
@@ -61,6 +69,7 @@ export function CasaTrackerApp() {
   const [ganttEndDate, setGanttEndDate] = useState(GANTT_END);
   const [actividadColWidth, setActividadColWidth] = useState<number | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [ganttVault, setGanttVault] = useState<GanttSnapshot[]>([]);
 
   useEffect(() => {
     let loadedRows = loadJson<ActivityRow[]>(STORAGE_KEYS.rows, []);
@@ -73,17 +82,21 @@ export function CasaTrackerApp() {
     let loadedGantt = loadJson<GanttActivity[]>(STORAGE_KEYS.ganttActivities, []);
     if (!loadedGantt.length) loadedGantt = createDefaultGanttActivities();
     const loadedEnd = loadJson<string>(STORAGE_KEYS.ganttEndDate, "") || GANTT_END;
+    appendGanttVaultSnapshot(loadedOv, loadedGantt, loadedEnd);
     const migrated = migrateGanttStorage(loadedGantt, loadedOv, loadedEnd);
     setGanttOv(migrated.ov);
     setGanttActivities(migrated.activities);
     setGanttEndDate(migrated.endDate);
     const savedW = localStorage.getItem(STORAGE_KEYS.colWidthActividad);
     if (savedW) setActividadColWidth(parseInt(savedW, 10));
+    setGanttVault(loadGanttVault());
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
+    appendGanttVaultSnapshot(ganttOv, ganttActivities, ganttEndDate);
+    setGanttVault(loadGanttVault());
     localStorage.setItem(STORAGE_KEYS.rows, JSON.stringify(rows));
     localStorage.setItem(STORAGE_KEYS.periods, JSON.stringify(periods));
     localStorage.setItem(STORAGE_KEYS.ganttOv, JSON.stringify(ganttOv));
@@ -254,6 +267,35 @@ export function CasaTrackerApp() {
     setGanttEndDate(result.endDate);
   }, [ganttActivities, ganttOv, ganttEndDate]);
 
+  const handleUndoOctoberShift = useCallback(() => {
+    if (
+      !confirm(
+        "¿Mover todo el cronograma 17 días hacia atrás?\nÚsalo si tus días quedaron desplazados por la migración a octubre.",
+      )
+    ) {
+      return;
+    }
+    const result = undoOctoberPlanningShift(ganttActivities, ganttOv, ganttEndDate);
+    setGanttActivities(result.activities);
+    setGanttOv(result.ov);
+    setGanttEndDate(result.endDate);
+  }, [ganttActivities, ganttOv, ganttEndDate]);
+
+  const handleRestoreSnapshot = useCallback((snapshot: GanttSnapshot) => {
+    if (
+      !confirm(
+        `¿Restaurar cronograma del ${formatSnapshotLabel(snapshot)}?\nSe reemplazará el cronograma actual.`,
+      )
+    ) {
+      return;
+    }
+    restoreGanttSnapshot(snapshot);
+    setGanttOv(snapshot.ganttOv);
+    setGanttActivities(snapshot.ganttActivities);
+    setGanttEndDate(snapshot.ganttEndDate);
+    setGanttVault(loadGanttVault());
+  }, []);
+
   const exportAppJson = useCallback(() => {
     downloadBackupJson(
       buildBackup({
@@ -408,6 +450,22 @@ export function CasaTrackerApp() {
             <span className="ni-icon"><IconUpload /></span>
             Importar JSON
           </button>
+          <div className="sidebar-recovery">
+            <div className="sidebar-section-label">Recuperar cronograma</div>
+            {ganttVault.slice(0, 5).map((snap) => (
+              <button
+                key={snap.savedAt}
+                type="button"
+                className="nav-item nav-item-recovery"
+                onClick={() => handleRestoreSnapshot(snap)}
+              >
+                {formatSnapshotLabel(snap)}
+              </button>
+            ))}
+            <button type="button" className="nav-item nav-item-recovery" onClick={handleUndoOctoberShift}>
+              Deshacer +17 días
+            </button>
+          </div>
           <input
             ref={importInputRef}
             type="file"
@@ -446,6 +504,14 @@ export function CasaTrackerApp() {
         <div className="content">
           {tab === "cronograma" && (
             <div id="tab-cronograma" className="tab-panel">
+              {ganttVault.length > 0 &&
+                Object.keys(ganttOv).length < Math.max(10, ganttVault[0].overrideCount * 0.6) && (
+                  <div className="recovery-banner">
+                    El cronograma parece incompleto. En la barra lateral, abre{" "}
+                    <strong>Recuperar cronograma</strong> y elige una copia automática, o{" "}
+                    <strong>Deshacer +17 días</strong> si las fechas se corrieron.
+                  </div>
+                )}
               <div className="section-hdr section-hdr-toolbar">
                 <div className="section-hdr-actions">
                   <button type="button" className="btn btn-ghost" onClick={addGanttWeek}>
