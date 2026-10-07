@@ -21,6 +21,7 @@ import {
   createDefaultGanttActivities,
   formatGanttRange,
 } from "@/lib/gantt-data";
+import { migrateGanttFrom2025To2026 } from "@/lib/gantt-migrate";
 import { fmt, num } from "@/lib/format";
 import { buildBackup, downloadBackupJson, parseBackup } from "@/lib/json-backup";
 import {
@@ -66,12 +67,14 @@ export function CasaTrackerApp() {
     if (!loadedPeriods.length) loadedPeriods = createDefaultPeriods();
     setRows(loadedRows);
     setPeriods(loadedPeriods);
-    setGanttOv(loadJson<GanttOverrides>(STORAGE_KEYS.ganttOv, {}));
+    let loadedOv = loadJson<GanttOverrides>(STORAGE_KEYS.ganttOv, {});
     let loadedGantt = loadJson<GanttActivity[]>(STORAGE_KEYS.ganttActivities, []);
     if (!loadedGantt.length) loadedGantt = createDefaultGanttActivities();
-    setGanttActivities(loadedGantt);
-    const loadedEnd = loadJson<string>(STORAGE_KEYS.ganttEndDate, "");
-    setGanttEndDate(loadedEnd || GANTT_END);
+    const loadedEnd = loadJson<string>(STORAGE_KEYS.ganttEndDate, "") || GANTT_END;
+    const migrated = migrateGanttFrom2025To2026(loadedGantt, loadedOv, loadedEnd);
+    setGanttOv(migrated.ov);
+    setGanttActivities(migrated.activities);
+    setGanttEndDate(migrated.endDate);
     const savedW = localStorage.getItem(STORAGE_KEYS.colWidthActividad);
     if (savedW) setActividadColWidth(parseInt(savedW, 10));
     setHydrated(true);

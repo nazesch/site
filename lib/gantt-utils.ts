@@ -88,5 +88,5 @@ export function weekLabel(days: Date[]): string {
 }
 
 export function dayLetter(d: Date): string {
-  return ["D", "L", "M", "M", "J", "V", "S"][d.getDay()];
+  return ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"][d.getDay()];
 }
