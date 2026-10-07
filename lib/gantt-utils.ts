@@ -19,7 +19,7 @@ export function buildDayList(endDate: string): Date[] {
   const days: Date[] = [];
   const end = parseLocalDate(endDate);
   for (let d = parseLocalDate(GANTT_START); d <= end; d = addDays(d, 1)) {
-    days.push(d);
+    if (d.getDay() !== 0) days.push(d);
   }
   return days;
 }
@@ -78,7 +78,7 @@ export function buildMonths(days: Date[]): { month: number; label: string; count
   return out;
 }
 
-/** Calendar weeks (Mon–Sun), including partial weeks at range edges. */
+/** Work weeks (Mon–Sat; no Sundays), including partial weeks at range edges. */
 export function buildWeeks(days: Date[]): { days: Date[] }[] {
   if (!days.length) return [];
   const out: { days: Date[] }[] = [];

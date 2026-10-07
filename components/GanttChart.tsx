@@ -220,11 +220,11 @@ export function GanttChart({
                 const prevActive = prevDs ? isDayActive(act, prevDs) : false;
                 const nextActive = nextDs ? isDayActive(act, nextDs) : false;
                 const seg = barSegmentClass(show, prevActive, nextActive);
-                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                const isSaturday = d.getDay() === 6;
                 return (
                   <td
                     key={`${act.id}|${ds}`}
-                    className={`g-day${isWeekend ? " weekend" : ""}${ds === todayIso ? " is-today" : ""}${show ? ` active-day ${seg}` : ""}`}
+                    className={`g-day${isSaturday ? " weekend" : ""}${ds === todayIso ? " is-today" : ""}${show ? ` active-day ${seg}` : ""}`}
                     title={`${act.name} – ${ds}`}
                     onPointerDown={(e) => onDayPointerDown(act, dayIdx, ds, e)}
                     onPointerEnter={() => onDayPointerEnter(act, dayIdx)}
