@@ -425,14 +425,9 @@ export function CasaTrackerApp() {
           <span className="topbar-sub">{formatGanttRange(ganttEndDate)}</span>
           <div className="topbar-actions">
             {tab === "cronograma" && (
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={applyRainyDay}
-                aria-label="Día de lluvia"
-              >
+              <button type="button" className="btn btn-ghost" onClick={applyRainyDay}>
                 <IconRain />
-                <span className="btn-text">Rainy day</span>
+                Rainy day
               </button>
             )}
             {tab === "tracker" && (
@@ -545,33 +540,6 @@ export function CasaTrackerApp() {
           )}
         </div>
       </div>
-
-      <nav className="mobile-tab-bar" aria-label="Navegación principal">
-        <button
-          type="button"
-          className={`mobile-tab${tab === "cronograma" ? " active" : ""}`}
-          onClick={() => setTab("cronograma")}
-        >
-          <IconCalendar />
-          <span>Cronograma</span>
-        </button>
-        <button
-          type="button"
-          className={`mobile-tab${tab === "tracker" ? " active" : ""}`}
-          onClick={() => setTab("tracker")}
-        >
-          <IconList />
-          <span>Actividades</span>
-        </button>
-        <button type="button" className="mobile-tab" onClick={exportAppJson} aria-label="Exportar JSON">
-          <IconDownload />
-          <span>Exportar</span>
-        </button>
-        <button type="button" className="mobile-tab" onClick={importAppJson} aria-label="Importar JSON">
-          <IconUpload />
-          <span>Importar</span>
-        </button>
-      </nav>
     </div>
   );
 }
