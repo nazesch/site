@@ -476,12 +476,33 @@ select.cell-input  { cursor: pointer; min-width: 70px; }
   text-overflow: ellipsis;
 }
 .g-day-hdr {
+  position: relative;
   min-width: var(--gantt-day-w);
   width: var(--gantt-day-w);
   max-width: var(--gantt-day-w);
   height: var(--gantt-h-day);
   padding: 0;
   vertical-align: bottom;
+}
+.g-day-hdr.is-today::before,
+.g-day.is-today::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 112, 243, 0.55) 0%,
+    rgba(0, 112, 243, 0.35) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+.g-day-hdr.is-today .dn {
+  color: var(--accent);
 }
 .g-day-hdr-inner {
   display: flex;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IconDrag } from "@/components/icons";
 import {
   buildDayList,
@@ -48,6 +48,7 @@ export function GanttChart({
   const days = buildDayList(endDate);
   const months = buildMonths(days);
   const weeks = buildWeeks(days);
+  const todayIso = useMemo(() => fmtDate(new Date()), []);
   const [dragSrcId, setDragSrcId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const paintRef = useRef<PaintState | null>(null);
@@ -153,14 +154,21 @@ export function GanttChart({
             ))}
           </tr>
           <tr className="gantt-day-row">
-            {days.map((d) => (
-              <th key={fmtDate(d)} className="g-day-hdr" scope="col">
+            {days.map((d) => {
+              const ds = fmtDate(d);
+              return (
+              <th
+                key={ds}
+                className={`g-day-hdr${ds === todayIso ? " is-today" : ""}`}
+                scope="col"
+              >
                 <span className="g-day-hdr-inner">
                   <span className="dl">{dayLetter(d)}</span>
                   <span className="dn">{d.getDate()}</span>
                 </span>
               </th>
-            ))}
+            );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -216,7 +224,7 @@ export function GanttChart({
                 return (
                   <td
                     key={`${act.id}|${ds}`}
-                    className={`g-day${isWeekend ? " weekend" : ""}${show ? ` active-day ${seg}` : ""}`}
+                    className={`g-day${isWeekend ? " weekend" : ""}${ds === todayIso ? " is-today" : ""}${show ? ` active-day ${seg}` : ""}`}
                     title={`${act.name} – ${ds}`}
                     onPointerDown={(e) => onDayPointerDown(act, dayIdx, ds, e)}
                     onPointerEnter={() => onDayPointerEnter(act, dayIdx)}
