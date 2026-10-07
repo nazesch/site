@@ -1,19 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BiweeklyGrid } from "@/components/BiweeklyGrid";
 import { GanttChart } from "@/components/GanttChart";
-import { IconExport, IconPlus } from "@/components/icons";
+import {
+  IconCalendar,
+  IconDownload,
+  IconExport,
+  IconLayers,
+  IconList,
+  IconPlus,
+  IconSaved,
+  IconUpload,
+} from "@/components/icons";
 import { TrackerTable } from "@/components/TrackerTable";
 import { exportTrackerCsv } from "@/lib/csv-export";
-import { STORAGE_KEYS } from "@/lib/constants";
+import { GANTT_END, STORAGE_KEYS } from "@/lib/constants";
+import {
+  addCalendarDays,
+  createDefaultGanttActivities,
+  formatGanttRange,
+} from "@/lib/gantt-data";
 import { fmt, num } from "@/lib/format";
+import { buildBackup, downloadBackupJson, parseBackup } from "@/lib/json-backup";
 import {
   createDefaultPeriods,
   createDefaultRows,
   weightedProgress,
 } from "@/lib/tracker-data";
-import type { ActivityRow, GanttOverrides, Period, TabId } from "@/lib/types";
+import type { ActivityRow, GanttActivity, GanttOverrides, Period, TabId } from "@/lib/types";
 
 const TOPBAR_TITLES: Record<TabId, string> = {
   cronograma: "Cronograma",
@@ -37,7 +52,12 @@ export function CasaTrackerApp() {
   const [rows, setRows] = useState<ActivityRow[]>(createDefaultRows);
   const [periods, setPeriods] = useState<Period[]>(createDefaultPeriods);
   const [ganttOv, setGanttOv] = useState<GanttOverrides>({});
+  const [ganttActivities, setGanttActivities] = useState<GanttActivity[]>(
+    createDefaultGanttActivities,
+  );
+  const [ganttEndDate, setGanttEndDate] = useState(GANTT_END);
   const [actividadColWidth, setActividadColWidth] = useState<number | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let loadedRows = loadJson<ActivityRow[]>(STORAGE_KEYS.rows, []);
@@ -47,6 +67,11 @@ export function CasaTrackerApp() {
     setRows(loadedRows);
     setPeriods(loadedPeriods);
     setGanttOv(loadJson<GanttOverrides>(STORAGE_KEYS.ganttOv, {}));
+    let loadedGantt = loadJson<GanttActivity[]>(STORAGE_KEYS.ganttActivities, []);
+    if (!loadedGantt.length) loadedGantt = createDefaultGanttActivities();
+    setGanttActivities(loadedGantt);
+    const loadedEnd = loadJson<string>(STORAGE_KEYS.ganttEndDate, "");
+    setGanttEndDate(loadedEnd || GANTT_END);
     const savedW = localStorage.getItem(STORAGE_KEYS.colWidthActividad);
     if (savedW) setActividadColWidth(parseInt(savedW, 10));
     setHydrated(true);
@@ -57,7 +82,9 @@ export function CasaTrackerApp() {
     localStorage.setItem(STORAGE_KEYS.rows, JSON.stringify(rows));
     localStorage.setItem(STORAGE_KEYS.periods, JSON.stringify(periods));
     localStorage.setItem(STORAGE_KEYS.ganttOv, JSON.stringify(ganttOv));
-  }, [rows, periods, ganttOv, hydrated]);
+    localStorage.setItem(STORAGE_KEYS.ganttActivities, JSON.stringify(ganttActivities));
+    localStorage.setItem(STORAGE_KEYS.ganttEndDate, ganttEndDate);
+  }, [rows, periods, ganttOv, ganttActivities, ganttEndDate, hydrated]);
 
   const persistColWidth = useCallback((width: number) => {
     setActividadColWidth(width);
@@ -184,8 +211,107 @@ export function CasaTrackerApp() {
     [periods, rows],
   );
 
-  const toggleGanttDay = useCallback((key: string, active: boolean) => {
-    setGanttOv((prev) => ({ ...prev, [key]: active }));
+  const setGanttDays = useCallback((keys: string[], active: boolean) => {
+    setGanttOv((prev) => {
+      const next = { ...prev };
+      for (const key of keys) next[key] = active;
+      return next;
+    });
+  }, []);
+
+  const reorderGanttActivities = useCallback((srcId: string, targetId: string) => {
+    setGanttActivities((prev) => {
+      const srcIdx = prev.findIndex((a) => a.id === srcId);
+      const tgtIdx = prev.findIndex((a) => a.id === targetId);
+      if (srcIdx === -1 || tgtIdx === -1) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(srcIdx, 1);
+      const newIdx = next.findIndex((a) => a.id === targetId);
+      next.splice(newIdx, 0, moved);
+      return next;
+    });
+  }, []);
+
+  const addGanttActivity = useCallback(() => {
+    setGanttActivities((prev) => [
+      ...prev,
+      { id: `act-${Date.now()}`, name: "Nueva Actividad", ranges: [] },
+    ]);
+  }, []);
+
+  const addGanttWeek = useCallback(() => {
+    setGanttEndDate((prev) => addCalendarDays(prev, 7));
+  }, []);
+
+  const exportAppJson = useCallback(() => {
+    downloadBackupJson(
+      buildBackup({
+        rows,
+        periods,
+        ganttOv,
+        ganttActivities,
+        ganttEndDate,
+        actividadColWidth,
+      }),
+    );
+  }, [rows, periods, ganttOv, ganttActivities, ganttEndDate, actividadColWidth]);
+
+  const importAppJson = useCallback(() => {
+    importInputRef.current?.click();
+  }, []);
+
+  const onImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === "string" ? reader.result : "";
+      const backup = parseBackup(text);
+      if (!backup) {
+        alert("No se pudo leer el archivo. Comprueba que sea un JSON de Casa Tracker válido.");
+        return;
+      }
+      if (
+        !confirm(
+          "¿Importar datos? Se reemplazarán actividades, quincenas y cronograma actuales.",
+        )
+      ) {
+        return;
+      }
+      setRows(backup.rows);
+      setPeriods(backup.periods);
+      setGanttOv(backup.ganttOv);
+      setGanttActivities(backup.ganttActivities);
+      setGanttEndDate(backup.ganttEndDate);
+      setActividadColWidth(backup.actividadColWidth);
+      if (backup.actividadColWidth != null) {
+        localStorage.setItem(STORAGE_KEYS.colWidthActividad, String(backup.actividadColWidth));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.colWidthActividad);
+      }
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const renameGanttActivity = useCallback((id: string, name: string) => {
+    setGanttActivities((prev) => {
+      const act = prev.find((a) => a.id === id);
+      if (!act || act.name === name) return prev;
+      const oldName = act.name;
+      setGanttOv((ov) => {
+        const next = { ...ov };
+        const oldPrefix = `${oldName}|`;
+        for (const key of Object.keys(ov)) {
+          if (!key.startsWith(oldPrefix)) continue;
+          const date = key.slice(oldPrefix.length);
+          next[`${name}|${date}`] = ov[key];
+          delete next[key];
+        }
+        return next;
+      });
+      return prev.map((a) => (a.id === id ? { ...a, name } : a));
+    });
   }, []);
 
   const stats = useMemo(() => {
@@ -209,28 +335,28 @@ export function CasaTrackerApp() {
     <div className="app">
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">🏗</div>
-          <div>
-            <div className="sidebar-logo-text">Casa Tracker</div>
-            <div className="sidebar-logo-sub">Construcción</div>
+          <div className="sidebar-logo-icon">
+            <IconLayers />
           </div>
+          <div className="sidebar-logo-text">Casa Tracker</div>
         </div>
 
         <div className="sidebar-section">
-          <div className="sidebar-section-label">Vistas</div>
           <button
             type="button"
             className={`nav-item${tab === "cronograma" ? " active" : ""}`}
             onClick={() => setTab("cronograma")}
           >
-            <span className="ni-icon">📅</span> Cronograma
+            <span className="ni-icon"><IconCalendar /></span>
+            Cronograma
           </button>
           <button
             type="button"
             className={`nav-item${tab === "tracker" ? " active" : ""}`}
             onClick={() => setTab("tracker")}
           >
-            <span className="ni-icon">📊</span> Actividades
+            <span className="ni-icon"><IconList /></span>
+            Actividades
             <span className="ni-count">{rows.length}</span>
           </button>
         </div>
@@ -258,19 +384,26 @@ export function CasaTrackerApp() {
         </div>
 
         <div className="sidebar-bottom">
-          <div className="nav-item" style={{ cursor: "default" }}>
-            <span className="ni-icon">💾</span> Auto-guardado
-            <span
-              style={{
-                marginLeft: "auto",
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "var(--green)",
-                display: "inline-block",
-              }}
-            />
+          <div className="nav-item nav-item-static">
+            <span className="ni-icon"><IconSaved /></span>
+            Auto-guardado
+            <span className="ni-status-dot" />
           </div>
+          <button type="button" className="nav-item" onClick={exportAppJson}>
+            <span className="ni-icon"><IconDownload /></span>
+            Exportar JSON
+          </button>
+          <button type="button" className="nav-item" onClick={importAppJson}>
+            <span className="ni-icon"><IconUpload /></span>
+            Importar JSON
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={onImportFile}
+          />
         </div>
       </aside>
 
@@ -278,7 +411,7 @@ export function CasaTrackerApp() {
         <div className="topbar">
           <span className="topbar-title">{TOPBAR_TITLES[tab]}</span>
           <span className="topbar-sep">/</span>
-          <span className="topbar-sub">Sep 14 – Nov 21, 2025</span>
+          <span className="topbar-sub">{formatGanttRange(ganttEndDate)}</span>
           <div className="topbar-actions">
             {tab === "tracker" && (
               <button
@@ -296,28 +429,26 @@ export function CasaTrackerApp() {
         <div className="content">
           {tab === "cronograma" && (
             <div id="tab-cronograma" className="tab-panel">
-              <div className="section-hdr">
-                <div className="section-hdr-left">
-                  <span className="section-title">Cronograma de Actividades Faltantes</span>
-                </div>
-                <span className="section-hint">Clic en una celda para activar / desactivar</span>
-              </div>
-              <GanttChart overrides={ganttOv} onToggleDay={toggleGanttDay} />
-              <div className="notes">
-                <strong>Notas</strong>
-                <div>
-                  <b style={{ color: "var(--text)" }}>Nota 1 —</b> Periodo sin actividades en
-                  cubierta y cielo razo: 5 días en espera del caballete de Comaderas.
-                </div>
-                <div>
-                  <b style={{ color: "var(--text)" }}>Nota 2 —</b> Trabajos en altura (bajo
-                  rendimiento): Pañete Interior/Exterior, Cubierta, Redoblón, Cielo Razo, Acabados.
-                </div>
-                <div>
-                  <b style={{ color: "var(--text)" }}>Nota 3 —</b> Terminación Plantilla Pulida: se
-                  ejecuta al finalizar la última actividad; requiere mínimo 3 semanas.
+              <div className="section-hdr section-hdr-toolbar">
+                <div className="section-hdr-actions">
+                  <button type="button" className="btn btn-ghost" onClick={addGanttWeek}>
+                    <IconPlus />
+                    Añadir semana
+                  </button>
+                  <button type="button" className="btn btn-primary" onClick={addGanttActivity}>
+                    <IconPlus />
+                    Nueva actividad
+                  </button>
                 </div>
               </div>
+              <GanttChart
+                activities={ganttActivities}
+                endDate={ganttEndDate}
+                overrides={ganttOv}
+                onSetDays={setGanttDays}
+                onReorder={reorderGanttActivities}
+                onRenameActivity={renameGanttActivity}
+              />
             </div>
           )}
 

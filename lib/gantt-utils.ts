@@ -1,4 +1,4 @@
-import { GANTT_END, GANTT_START } from "./constants";
+import { GANTT_START } from "./constants";
 
 const MONTH_NAMES = [
   "Ene",
@@ -15,10 +15,10 @@ const MONTH_NAMES = [
   "Dic",
 ];
 
-export function buildDayList(): Date[] {
+export function buildDayList(endDate: string): Date[] {
   const days: Date[] = [];
-  const end = new Date(GANTT_END);
-  for (let d = new Date(GANTT_START); d <= end; d.setDate(d.getDate() + 1)) {
+  const end = new Date(endDate + "T12:00:00");
+  for (let d = new Date(GANTT_START + "T12:00:00"); d <= end; d.setDate(d.getDate() + 1)) {
     if (d.getDay() !== 0) days.push(new Date(d));
   }
   return days;
@@ -65,9 +65,7 @@ export function weekLabel(days: Date[]): string {
   if (!days.length) return "";
   const s = days[0];
   const e = days[days.length - 1];
-  return s.getMonth() === e.getMonth()
-    ? `${MONTH_NAMES[s.getMonth()]} ${s.getDate()}–${e.getDate()}`
-    : `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}`;
+  return `${s.getDate()}–${e.getDate()}`;
 }
 
 export function dayLetter(d: Date): string {

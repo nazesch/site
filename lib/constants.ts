@@ -74,6 +74,8 @@ export const STORAGE_KEYS = {
   rows: "tRows",
   periods: "tPeriods",
   ganttOv: "ganttOv",
+  ganttActivities: "ganttActivities",
+  ganttEndDate: "ganttEndDate",
   colWidthActividad: "colWidthActividad",
 } as const;
 

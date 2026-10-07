@@ -27,3 +27,9 @@ export type Period = {
 export type TabId = "cronograma" | "tracker";
 
 export type GanttOverrides = Record<string, boolean>;
+
+export type GanttActivity = {
+  id: string;
+  name: string;
+  ranges: [string, string][];
+};
