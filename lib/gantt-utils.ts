@@ -32,7 +32,7 @@ export function fmtDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function parseLocalDate(iso: string): Date {
+export function parseLocalDate(iso: string): Date {
   return new Date(iso + "T12:00:00");
 }
 
@@ -40,6 +40,23 @@ function addDays(d: Date, n: number): Date {
   const next = new Date(d);
   next.setDate(next.getDate() + n);
   return next;
+}
+
+/** Next calendar day that is not Sunday. */
+export function nextWorkDayAfter(iso: string): string {
+  let d = parseLocalDate(iso);
+  do {
+    d = addDays(d, 1);
+  } while (d.getDay() === 0);
+  return fmtDate(d);
+}
+
+export function firstWorkDayOnOrAfter(iso: string): string {
+  let d = parseLocalDate(iso);
+  while (d.getDay() === 0) {
+    d = addDays(d, 1);
+  }
+  return fmtDate(d);
 }
 
 export function inRange(ds: string, ranges: [string, string][]): boolean {

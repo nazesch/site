@@ -10,6 +10,7 @@ import {
   IconLayers,
   IconList,
   IconPlus,
+  IconRain,
   IconSaved,
   IconUpload,
 } from "@/components/icons";
@@ -22,6 +23,7 @@ import {
   formatGanttRange,
 } from "@/lib/gantt-data";
 import { migrateGanttFrom2025To2026 } from "@/lib/gantt-migrate";
+import { applyRainyDayToAll } from "@/lib/gantt-rain";
 import { fmt, num } from "@/lib/format";
 import { buildBackup, downloadBackupJson, parseBackup } from "@/lib/json-backup";
 import {
@@ -246,6 +248,12 @@ export function CasaTrackerApp() {
     setGanttEndDate((prev) => addCalendarDays(prev, 7));
   }, []);
 
+  const applyRainyDay = useCallback(() => {
+    const result = applyRainyDayToAll(ganttActivities, ganttOv, ganttEndDate);
+    setGanttOv(result.overrides);
+    setGanttEndDate(result.endDate);
+  }, [ganttActivities, ganttOv, ganttEndDate]);
+
   const exportAppJson = useCallback(() => {
     downloadBackupJson(
       buildBackup({
@@ -416,6 +424,12 @@ export function CasaTrackerApp() {
           <span className="topbar-sep">/</span>
           <span className="topbar-sub">{formatGanttRange(ganttEndDate)}</span>
           <div className="topbar-actions">
+            {tab === "cronograma" && (
+              <button type="button" className="btn btn-ghost" onClick={applyRainyDay}>
+                <IconRain />
+                Rainy day
+              </button>
+            )}
             {tab === "tracker" && (
               <button
                 type="button"

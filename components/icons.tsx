@@ -125,6 +125,25 @@ export function IconUpload() {
   );
 }
 
+export function IconRain() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M4.5 7.5a3 3 0 014.1-2.7A2.5 2.5 0 0112 7c1.4 0 2.5 1 2.5 2.2 0 .5-.1.9-.3 1.3H3.5c-.6 0-1-.5-1-1.1 0-1 .8-1.7 2-1.7z"
+        stroke="currentColor"
+        strokeWidth={stroke}
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 12.5v2M8 11.5v2.5M10 12.5v2"
+        stroke="currentColor"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function IconSaved() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
