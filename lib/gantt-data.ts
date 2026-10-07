@@ -1,4 +1,5 @@
 import { GANTT_END, GANTT_SCHEDULE, GANTT_START } from "./constants";
+import { fmtDate } from "./gantt-utils";
 import type { GanttActivity } from "./types";
 
 export function createDefaultGanttActivities(): GanttActivity[] {
@@ -19,7 +20,7 @@ export function slugId(name: string): string {
 export function addCalendarDays(isoDate: string, days: number): string {
   const d = new Date(isoDate + "T12:00:00");
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return fmtDate(d);
 }
 
 export function formatGanttRange(endDate: string): string {

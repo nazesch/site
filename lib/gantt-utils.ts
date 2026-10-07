@@ -17,15 +17,29 @@ const MONTH_NAMES = [
 
 export function buildDayList(endDate: string): Date[] {
   const days: Date[] = [];
-  const end = new Date(endDate + "T12:00:00");
-  for (let d = new Date(GANTT_START + "T12:00:00"); d <= end; d.setDate(d.getDate() + 1)) {
-    if (d.getDay() !== 0) days.push(new Date(d));
+  const end = parseLocalDate(endDate);
+  for (let d = parseLocalDate(GANTT_START); d <= end; d = addDays(d, 1)) {
+    days.push(d);
   }
   return days;
 }
 
+/** Calendar date in local time (YYYY-MM-DD). Avoids UTC shift from toISOString(). */
 export function fmtDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseLocalDate(iso: string): Date {
+  return new Date(iso + "T12:00:00");
+}
+
+function addDays(d: Date, n: number): Date {
+  const next = new Date(d);
+  next.setDate(next.getDate() + n);
+  return next;
 }
 
 export function inRange(ds: string, ranges: [string, string][]): boolean {
@@ -47,17 +61,19 @@ export function buildMonths(days: Date[]): { month: number; label: string; count
   return out;
 }
 
+/** Calendar weeks (Mon–Sun), including partial weeks at range edges. */
 export function buildWeeks(days: Date[]): { days: Date[] }[] {
+  if (!days.length) return [];
   const out: { days: Date[] }[] = [];
-  let cur: { days: Date[] } | null = null;
-  days.forEach((d) => {
-    if (!cur || d.getDay() === 1) {
-      if (cur) out.push(cur);
-      cur = { days: [] };
+  let cur: Date[] = [];
+  for (const d of days) {
+    if (cur.length > 0 && d.getDay() === 1) {
+      out.push({ days: cur });
+      cur = [];
     }
-    cur.days.push(d);
-  });
-  if (cur) out.push(cur);
+    cur.push(d);
+  }
+  if (cur.length) out.push({ days: cur });
   return out;
 }
 
@@ -65,7 +81,10 @@ export function weekLabel(days: Date[]): string {
   if (!days.length) return "";
   const s = days[0];
   const e = days[days.length - 1];
-  return `${s.getDate()}–${e.getDate()}`;
+  if (s.getMonth() === e.getMonth()) {
+    return `${s.getDate()}–${e.getDate()}`;
+  }
+  return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}`;
 }
 
 export function dayLetter(d: Date): string {

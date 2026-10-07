@@ -49,6 +49,7 @@
   --gantt-bar: #5e6ad2;
   --gantt-row-h: 44px;
   --gantt-day-w: 28px;
+  --gantt-h-month: 28px;
   --gantt-h-week: 28px;
   --gantt-h-day: 40px;
   --font: 'Söhne', var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -419,6 +420,7 @@ select.cell-input  { cursor: pointer; min-width: 70px; }
   font-weight: 500;
   vertical-align: middle;
 }
+.gantt-head .gantt-month-row th { border-bottom: 1px solid var(--border); }
 .gantt-head .gantt-week-row th { border-bottom: 1px solid var(--border); }
 .gantt-head .gantt-day-row th { border-bottom: 1px solid var(--border); }
 
@@ -455,6 +457,14 @@ select.cell-input  { cursor: pointer; min-width: 70px; }
   box-sizing: border-box;
 }
 
+.g-month-hdr {
+  height: var(--gantt-h-month);
+  color: var(--text3);
+  font-size: 11px;
+  text-align: center;
+  padding: 0 6px;
+  white-space: nowrap;
+}
 .g-week-hdr {
   height: var(--gantt-h-week);
   color: var(--text3);
@@ -509,7 +519,7 @@ select.cell-input  { cursor: pointer; min-width: 70px; }
   outline: none;
 }
 .g-day:focus { outline: none; }
-.g-day.sat { background: rgba(0, 0, 0, 0.02); }
+.g-day.weekend { background: rgba(0, 0, 0, 0.03); }
 .g-day:not(.active-day):hover { background: rgba(94, 106, 210, 0.06); }
 
 .g-day-bar {

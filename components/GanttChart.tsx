@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { IconDrag } from "@/components/icons";
 import {
   buildDayList,
+  buildMonths,
   buildWeeks,
   dayLetter,
   fmtDate,
@@ -45,6 +46,7 @@ export function GanttChart({
   onRenameActivity,
 }: Props) {
   const days = buildDayList(endDate);
+  const months = buildMonths(days);
   const weeks = buildWeeks(days);
   const [dragSrcId, setDragSrcId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -133,10 +135,17 @@ export function GanttChart({
       <div className={`gantt-wrap${painting ? " is-painting" : ""}`}>
       <table id="gantt-table">
         <thead className="gantt-head">
-          <tr className="gantt-week-row">
-            <th rowSpan={2} className="g-act-col hdr" scope="col">
+          <tr className="gantt-month-row">
+            <th rowSpan={3} className="g-act-col hdr" scope="col">
               Actividad
             </th>
+            {months.map((m) => (
+              <th key={`${m.label}-${m.count}`} colSpan={m.count} className="g-month-hdr" scope="col">
+                {m.label}
+              </th>
+            ))}
+          </tr>
+          <tr className="gantt-week-row">
             {weeks.map((w, i) => (
               <th key={i} colSpan={w.days.length} className="g-week-hdr" scope="col">
                 {weekLabel(w.days)}
@@ -203,11 +212,11 @@ export function GanttChart({
                 const prevActive = prevDs ? isDayActive(act, prevDs) : false;
                 const nextActive = nextDs ? isDayActive(act, nextDs) : false;
                 const seg = barSegmentClass(show, prevActive, nextActive);
-                const isSat = d.getDay() === 6;
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                 return (
                   <td
                     key={`${act.id}|${ds}`}
-                    className={`g-day${isSat ? " sat" : ""}${show ? ` active-day ${seg}` : ""}`}
+                    className={`g-day${isWeekend ? " weekend" : ""}${show ? ` active-day ${seg}` : ""}`}
                     title={`${act.name} – ${ds}`}
                     onPointerDown={(e) => onDayPointerDown(act, dayIdx, ds, e)}
                     onPointerEnter={() => onDayPointerEnter(act, dayIdx)}
